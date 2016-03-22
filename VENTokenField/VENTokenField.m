@@ -93,6 +93,7 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
     self.tokenPadding = VENTokenFieldDefaultTokenPadding;
     self.minInputWidth = VENTokenFieldDefaultMinInputWidth;
     self.colorScheme = [UIColor blueColor];
+    self.tokenFont = [UIFont fontWithName:@"HelveticaNeue" size:15.5];
     self.toLabelTextColor = [UIColor colorWithRed:112/255.0f green:124/255.0f blue:124/255.0f alpha:1.0f];
     self.inputTextFieldTextColor = [UIColor colorWithRed:38/255.0f green:39/255.0f blue:41/255.0f alpha:1.0f];
     
@@ -122,6 +123,16 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
 {
     _placeholderText = placeholderText;
     self.inputTextField.placeholder = _placeholderText;
+}
+
+- (void)setInputTextFieldFont:(UIFont *)inputTextFieldFont{
+    _inputTextFieldFont = inputTextFieldFont;
+    self.inputTextField.font = inputTextFieldFont;
+}
+
+- (void)setTokenFont:(UIFont *)tokenFont{
+    _tokenFont = tokenFont;
+    [self setNeedsLayout];
 }
 
 -(void)setInputTextFieldAccessibilityLabel:(NSString *)inputTextFieldAccessibilityLabel {
@@ -297,9 +308,12 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
 
 - (void)layoutTokensWithCurrentX:(CGFloat *)currentX currentY:(CGFloat *)currentY
 {
+    NSUInteger maxTokens = [self maxNumberOfTokens];
+    
     for (NSUInteger i = 0; i < [self numberOfTokens]; i++) {
         NSString *title = [self titleForTokenAtIndex:i];
         VENToken *token = [[VENToken alloc] init];
+        token.font = self.tokenFont;
 
         __weak VENToken *weakToken = token;
         __weak VENTokenField *weakSelf = self;
@@ -307,7 +321,12 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
             [weakSelf didTapToken:weakToken];
         };
 
-        [token setTitleText:[NSString stringWithFormat:@"%@,", title]];
+        if (i == maxTokens) {
+            [token setTitleText:[NSString stringWithFormat:@"%@", title]];
+        }
+        else{
+            [token setTitleText:[NSString stringWithFormat:@"%@,", title]];
+        }
         token.colorScheme = [self colorSchemeForTokenAtIndex:i];
         
         [self.tokens addObject:token];
@@ -354,6 +373,9 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
     [self.inputTextField becomeFirstResponder];
     if ([self.delegate respondsToSelector:@selector(tokenFieldDidBeginEditing:)]) {
         [self.delegate tokenFieldDidBeginEditing:self];
+    }
+    if ([self numberOfTokens] == [self maxNumberOfTokens]) {
+        [self didTapToken:self.tokens.lastObject];
     }
 }
 
@@ -528,10 +550,22 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
 - (NSUInteger)numberOfTokens
 {
     if ([self.dataSource respondsToSelector:@selector(numberOfTokensInTokenField:)]) {
-        return [self.dataSource numberOfTokensInTokenField:self];
+        
+        NSUInteger numTokens = [self.dataSource numberOfTokensInTokenField:self];
+        return numTokens >= [self maxNumberOfTokens] ? [self maxNumberOfTokens] : numTokens;
+        
     }
     
     return 0;
+}
+
+- (NSUInteger)maxNumberOfTokens
+{
+    if ([self.dataSource respondsToSelector:@selector(numberOfTokensInTokenField:)]) {
+        return [self.dataSource maximumNumberOfTokensInTokenField:self];
+    }
+    
+    return INT_MAX;
 }
 
 - (NSString *)collapsedText
