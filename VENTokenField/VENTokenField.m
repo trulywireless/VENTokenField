@@ -79,7 +79,8 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
 - (BOOL)resignFirstResponder
 {
     [super resignFirstResponder];
-    return [self.inputTextField resignFirstResponder];
+    
+    return [self.inputTextField resignFirstResponder] || [self.invisibleTextField resignFirstResponder];
 }
 
 - (void)setUpInit
@@ -366,6 +367,7 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
     [self.invisibleTextField setAutocorrectionType:self.autocorrectionType];
     [self.invisibleTextField setAutocapitalizationType:self.autocapitalizationType];
     self.invisibleTextField.backspaceDelegate = self;
+    self.invisibleTextField.delegate = self;
     [self addSubview:self.invisibleTextField];
 }
 
@@ -615,16 +617,24 @@ static const CGFloat VENTokenFieldDefaultMaxHeight          = 150.0;
 }
 
 - (BOOL)textFieldShouldBeginEditing:(UITextField *)textField{
-    if ([self canAcceptTokens]) {
-        return true;
-    }
-    else{
-        if (self.tokens.count) {
-            [self didTapToken:self.tokens.lastObject];
+    
+    if (textField == self.inputTextField){
+        
+        if ([self canAcceptTokens]) {
+            return true;
+        }
+        else{
+            if (self.tokens.count) {
+                [self didTapToken:self.tokens.lastObject];
+            }
+            
+            return false;
         }
         
-        return false;
     }
+    
+    return true;
+    
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
